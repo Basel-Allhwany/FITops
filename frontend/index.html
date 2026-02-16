@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitOps Timer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            direction: rtl;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.5s;
+        }
+        body.state-idle { background: linear-gradient(135deg, #667eea, #764ba2); }
+        body.state-focus { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+        body.state-exercise { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        
+        h1 { color: white; font-size: 1.8em; margin-bottom: 5px; }
+        #state { color: rgba(255,255,255,0.8); font-size: 1.2em; margin: 5px 0; }
+        
+        /* شريط التقدم الدائري */
+        .progress-ring {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 20px auto;
+        }
+        .progress-ring svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+        .progress-ring-circle-bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.2);
+            stroke-width: 12;
+        }
+        .progress-ring-circle {
+            fill: none;
+            stroke: #4CAF50;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        body.state-focus .progress-ring-circle { stroke: #4CAF50; }
+        body.state-exercise .progress-ring-circle { stroke: #fff; }
+        
+        .progress-ring-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        #timer {
+            font-size: 3.5em;
+            font-weight: bold;
+            color: white;
+        }
+        #timerLabel {
+            font-size: 1em;
+            color: rgba(255,255,255,0.7);
+            margin-top: 5px;
+        }
+        
+        .btn {
+            font-size: 1.2em; padding: 15px 40px; border: none;
+            border-radius: 50px; cursor: pointer; transition: all 0.3s;
+            font-weight: bold; margin: 10px;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); }
+        #startFocusBtn { background: #4CAF50; color: white; }
+        #completeExerciseBtn { background: #fff; color: #f5576c; }
+        
+        #exercise { color: white; margin: 20px; }
+        #exerciseName { font-size: 1.6em; margin: 10px 0; }
+        #exerciseDesc { font-size: 1em; opacity: 0.9; }
+        .hidden { display: none !important; }
+        #focusMessage { color: rgba(255,255,255,0.6); font-size: 1.1em; margin-top: 15px; }
+        
+        /* إحصائيات اليوم */
+        #todayStats {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 20px 25px;
+            color: white;
+            text-align: right;
+            min-width: 250px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        #todayStats h3 { font-size: 1.2em; margin-bottom: 12px; }
+        .stat-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 1.05em; }
+        .stat-value { font-weight: bold; color: #69ff6e; font-size: 1.2em; }
+        .stat-exercises { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 0.95em; }
+        .exercise-item { display: flex; justify-content: space-between; margin: 6px 0; opacity: 0.9; }
+        
+        /* زر الإعدادات */
+        #settingsBtn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(15px);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: white;
+            transition: all 0.3s;
+        }
+        #settingsBtn:hover { background: rgba(255,255,255,0.25); transform: rotate(45deg); }
+        
+        /* نافذة الإعدادات */
+        #settingsModal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: right;
+            color: #333;
+        }
+        .modal-content h2 { margin-bottom: 20px; color: #667eea; }
+        .setting-group { margin: 20px 0; }
+        .setting-group label { display: block; margin-bottom: 8px; font-weight: bold; }
+        .setting-group select, .setting-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1em;
+            direction: rtl;
+        }
+        .setting-group select:focus, .setting-group input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 25px; }
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #saveSettings { background: #4CAF50; color: white; }
+        #cancelSettings { background: #ddd; color: #333; }
+        
+        /* شريط الإشعارات */
+        #notificationBar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: #ff9800;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 1001;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulsing #timer { animation: pulse 0.5s ease-in-out infinite; }
+
+        @media (max-width: 600px) {
+            #todayStats { position: relative; top: 0; left: 0; margin: 10px auto; width: 90%; min-width: auto; }
+            #settingsBtn { top: auto; bottom: 20px; right: 20px; }
+            .progress-ring { width: 240px; height: 240px; }
+            #timer { font-size: 3em; }
+        }
+    </style>
+</head>
+<body class="state-idle">
+
+    <!-- شريط الإشعارات -->
+    <div id="notificationBar" class="hidden" onclick="requestNotificationPermission()">
+        🔔 اضغط هنا لتفعيل الإشعارات والصوت
+    </div>
+
+    <!-- زر الإعدادات -->
+    <button id="settingsBtn" onclick="openSettings()">⚙️</button>
+
+    <!-- إحصائيات اليوم -->
+    <div id="todayStats">
+        <h3>📊 إحصائيات اليوم</h3>
+        <div class="stat-row">
+            <span>الجلسات:</span>
+            <span class="stat-value" id="totalSessions">0</span>
+        </div>
+        <div class="stat-row">
+            <span>التكرارات:</span>
+            <span class="stat-value" id="totalReps">0</span>
+        </div>
+        <div class="stat-row">
+            <span>الوقت:</span>
+            <span class="stat-value" id="totalTime">0 د</span>
+        </div>
+        <div class="stat-exercises" id="exercisesList"></div>
+    </div>
+
+    <!-- نافذة الإعدادات -->
+    <div id="settingsModal" class="hidden">
+        <div class="modal-content">
+            <h2>⚙️ الإعدادات</h2>
+            
+            <div class="setting-group">
+                <label>⏱️ مدة التركيز (دقائق)</label>
+                <select id="focusDuration">
+                    <option value="15">15 دقيقة</option>
+                    <option value="25" selected>25 دقيقة</option>
+                    <option value="30">30 دقيقة</option>
+                    <option value="45">45 دقيقة</option>
+                    <option value="60">60 دقيقة</option>
+                </select>
+            </div>
+            
+            <div class="setting-group">
+                <label>🏋️ مدة التمرين (دقائق)</label>
+                <select id="exerciseDuration">
+                    <option value="3">3 دقائق</option>
+                    <option value="5" selected>5 دقائق</option>
+                    <option value="7">7 دقائق</option>
+                    <option value="10">10 دقائق</option>
+                </select>
+            </div>
+            
+            <div class="modal-buttons">
+                <button id="saveSettings" onclick="saveSettings()">💾 حفظ</button>
+                <button id="cancelSettings" onclick="closeSettings()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <h1>⏱️ FitOps Timer</h1>
+    <div id="state">جاهز</div>
+    
+    <!-- شريط التقدم الدائري -->
+    <div class="progress-ring" id="progressRing">
+        <svg viewBox="0 0 100 100">
+            <circle class="progress-ring-circle-bg" cx="50" cy="50" r="42"></circle>
+            <circle class="progress-ring-circle" id="progressCircle" cx="50" cy="50" r="42"
+                    stroke-dasharray="263.89" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="progress-ring-content">
+            <div id="timer">00:00</div>
+            <div id="timerLabel">جاهز للبدء</div>
+        </div>
+    </div>
+    
+    <button id="startFocusBtn" class="btn" onclick="startFocus()">🎯 ابدأ جلسة التركيز</button>
+    
+    <div id="focusMessage" class="hidden">🧠 ركّز على عملك...</div>
+    
+    <div id="exercise" class="hidden">
+        <h2 id="exerciseName"></h2>
+        <p id="exerciseDesc"></p>
+        <button id="completeExerciseBtn" class="btn" onclick="completeExercise()">✅ تم التمرين!</button>
+    </div>
+
+    <script>
+        // ===== Variables =====
+        let lastState = 'IDLE';
+        let audioContext = null;
+        let notificationPermission = Notification.permission;
+        const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * 42; // 263.89
+
+        // ===== Audio =====
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') audioContext.resume();
+        }
+
+        function playBeep(frequency = 800, duration = 300, times = 3) {
+            if (!audioContext) initAudio();
+            let delay = 0;
+            for (let i = 0; i < times; i++) {
+                setTimeout(() => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    osc.frequency.value = frequency;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.5, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration/1000);
+                    osc.start(audioContext.currentTime);
+                    osc.stop(audioContext.currentTime + duration/1000);
+                }, delay);
+                delay += duration + 100;
+            }
+        }
+
+        // ===== Notifications =====
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(perm => {
+                    notificationPermission = perm;
+                    if (perm === 'granted') {
+                        document.getElementById('notificationBar').classList.add('hidden');
+                        initAudio();
+                        playBeep(600, 200, 1);
+                    }
+                });
+            }
+        }
+
+        function showNotification(title, body) {
+            if (notificationPermission === 'granted') {
+                new Notification(title, { body, tag: 'fitops' });
+            }
+        }
+
+        function checkNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                document.getElementById('notificationBar').classList.remove('hidden');
+            }
+        }
+
+        // ===== API =====
+        async function api(endpoint, method = 'GET', data = null) {
+            try {
+                const options = { method };
+                if (data) {
+                    options.headers = { 'Content-Type': 'application/json' };
+                    options.body = JSON.stringify(data);
+                }
+                const res = await fetch('/api/' + endpoint, options);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return await res.json();
+            } catch (err) {
+                console.error('API Error:', err);
+                return null;
+            }
+        }
+
+        // ===== Format =====
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return m + ':' + s;
+        }
+
+        function stateLabel(state) {
+            return { 'IDLE': '⚡ جاهز', 'FOCUS': '🧠 تركيز', 'EXERCISE': '🏋️ تمرين' }[state] || state;
+        }
+
+        function timerLabel(state) {
+            return { 'IDLE': 'جاهز للبدء', 'FOCUS': 'وقت التركيز', 'EXERCISE': 'وقت التمرين' }[state] || '';
+        }
+
+        // ===== Progress Ring =====
+        function updateProgressRing(progress) {
+            const circle = document.getElementById('progressCircle');
+            const offset = CIRCLE_CIRCUMFERENCE - (progress / 100) * CIRCLE_CIRCUMFERENCE;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        // ===== Stats =====
+        async function updateStats() {
+            const data = await api('stats/today');
+            if (!data) return;
+
+            document.getElementById('totalSessions').textContent = data.total_sessions;
+            document.getElementById('totalReps').textContent = data.total_reps;
+            document.getElementById('totalTime').textContent = data.total_duration_minutes + ' د';
+
+            const list = document.getElementById('exercisesList');
+            if (data.exercises && data.exercises.length > 0) {
+                list.innerHTML = data.exercises.map(e => 
+                    `<div class="exercise-item"><span>${e.name_ar}</span><span>${e.count}x</span></div>`
+                ).join('');
+            } else {
+                list.innerHTML = '<div style="opacity:0.6">لا توجد تمارين بعد</div>';
+            }
+        }
+
+        // ===== Settings =====
+        async function loadSettings() {
+            const data = await api('settings');
+            if (data) {
+                document.getElementById('focusDuration').value = data.focus_duration;
+                document.getElementById('exerciseDuration').value = data.exercise_duration;
+            }
+        }
+
+        function openSettings() {
+            loadSettings();
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        async function saveSettings() {
+            const focus = parseInt(document.getElementById('focusDuration').value);
+            const exercise = parseInt(document.getElementById('exerciseDuration').value);
+            
+            const result = await api('settings', 'POST', {
+                focus_duration: focus,
+                exercise_duration: exercise
+            });
+            
+            if (result && result.status === 'ok') {
+                playBeep(600, 150, 1);
+                closeSettings();
+            }
+        }
+
+        // ===== UI Update =====
+        async function updateUI() {
+            const data = await api('state');
+            if (!data) return;
+
+            const { state, remaining_seconds, progress, exercise } = data;
+
+            document.getElementById('state').innerText = stateLabel(state);
+            document.getElementById('timer').innerText = formatTime(remaining_seconds);
+            document.getElementById('timerLabel').innerText = timerLabel(state);
+            document.body.className = 'state-' + state.toLowerCase();
+
+            // تحديث شريط التقدم
+            updateProgressRing(progress);
+
+            // إظهار/إخفاء العناصر
+            document.getElementById('startFocusBtn').classList.toggle('hidden', state !== 'IDLE');
+            document.getElementById('focusMessage').classList.toggle('hidden', state !== 'FOCUS');
+            document.getElementById('exercise').classList.toggle('hidden', state !== 'EXERCISE');
+
+            if (state === 'EXERCISE' && exercise) {
+                document.getElementById('exerciseName').innerText = exercise.name_ar;
+                document.getElementById('exerciseDesc').innerText = 
+                    exercise.description_ar + ' | ' + exercise.default_reps + ' تكرار';
+            }
+
+            // تأثير الوميض
+            const ring = document.getElementById('progressRing');
+            if (remaining_seconds <= 10 && remaining_seconds > 0 && state !== 'IDLE') {
+                ring.classList.add('pulsing');
+            } else {
+                ring.classList.remove('pulsing');
+            }
+
+            // تغير الحالة
+            if (state !== lastState) {
+                handleStateChange(lastState, state, exercise);
+                lastState = state;
+            }
+        }
+
+        function handleStateChange(from, to, exercise) {
+            if (from === 'FOCUS' && to === 'EXERCISE') {
+                playBeep(800, 300, 4);
+                showNotification('🏋️ وقت التمرين!', exercise ? exercise.name_ar : 'حان وقت التمرين');
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+            }
+            if (from === 'EXERCISE' && to === 'IDLE') {
+                playBeep(600, 200, 2);
+                showNotification('✅ أحسنت!', 'أكملت التمرين بنجاح');
+                updateStats();
+            }
+            if (from === 'IDLE' && to === 'FOCUS') {
+                playBeep(500, 150, 1);
+            }
+        }
+
+        // ===== Actions =====
+        async function startFocus() {
+            initAudio();
+            await api('start_focus', 'POST');
+            lastState = 'IDLE';
+            updateUI();
+        }
+
+        async function completeExercise() {
+            await api('complete_exercise', 'POST');
+            updateUI();
+        }
+
+        // ===== Init =====
+        checkNotificationPermission();
+        loadSettings();
+        updateStats();
+        setInterval(updateUI, 1000);
+        setInterval(updateStats, 30000);
+        updateUI();
+    </script>
+
+</body>
+</html>
