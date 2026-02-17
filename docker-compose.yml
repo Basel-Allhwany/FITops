@@ -1,6 +1,6 @@
 services:
   backend:
-    build: .
+    image: basellhwany/fitops:latest
     container_name: fitops-backend
     volumes:
       - fitops-data:/app/data

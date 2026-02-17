@@ -2,7 +2,6 @@ services:
   backend:
     image: basellhwany/fitops:latest
     container_name: fitops-backend
-    pull_policy: always
     volumes:
       - fitops-data:/app/data
     environment:
