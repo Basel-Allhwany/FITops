@@ -54,24 +54,23 @@
    git clone [https://github.com/Basel-Allhwany/FITops.git](https://github.com/Basel-Allhwany/FITops.git)
    cd FITops
 
-```
-
+   ```
+   
 2. **التشغيل:**
-```bash
-docker compose up -d
+   ```bash
+   docker compose up -d
 
-```
+   ``` 
 
 
 3. **ابدأ الآن:**
 افتح متصفحك وتوجه إلى: [http://localhost:8080]()
 
----
+  ---
 
 
 <div align="center">
 
-<b>لا تنسَ أن تأخذ نفساً عميقاً وتتحرك!</b>
-
 </div>
+
 
