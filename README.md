@@ -1,5 +1,3 @@
-```bash
-cat > ~/Desktop/FITops/README.md << 'EOF'
 # ⏱️ FitOps Timer | رفيقك للإنتاجية والنشاط
 
 <div align="center">
@@ -9,9 +7,8 @@ cat > ~/Desktop/FITops/README.md << 'EOF'
 ![Version](https://img.shields.io/badge/version-1.0.0-brightgreen?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge)
 
-**تطبيق ذكي يكسر روتين العمل المجهد بتمارين رياضية تنبض بالحياة** *لأن صحتك هي المحرك الحقيقي لإنتاجيتك.*
 
-[التثبيت](#-التثبيت-والتشغيل) • [الميزات](#-ميزات-تجعل-حياتك-أسهل) • [كيف يعمل؟](#-الفكرة) • [المساهمة](#-المساهمة)
+[التثبيت](#-التثبيت-والتشغيل) • [الميزات](#-ميزات-تجعل-حياتك-أسهل) • [كيف يعمل؟](#-الفكرة)
 
 </div>
 
@@ -78,4 +75,3 @@ docker compose up -d
 
 </div>
 
-EOF
