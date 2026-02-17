@@ -51,7 +51,7 @@
 
 1. **تحميل المشروع:**
    ```bash
-   git clone [https://github.com/Basel-Allhwany/FITops.git](https://github.com/Basel-Allhwany/FITops.git)
+   git clone https://github.com/Basel-Allhwany/FITops.git
    cd FITops
 
    ```
@@ -72,5 +72,6 @@
 <div align="center">
 
 </div>
+
 
 
