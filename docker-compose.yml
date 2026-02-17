@@ -1,12 +1,12 @@
 services:
   backend:
+    build: .
     image: basellhwany/fitops:latest
     container_name: fitops-backend
     volumes:
       - fitops-data:/app/data
     environment:
       - DEBUG=false
-      - TZ=Asia/Riyadh
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
@@ -29,4 +29,3 @@ services:
 
 volumes:
   fitops-data:
-    name: fitops-data
